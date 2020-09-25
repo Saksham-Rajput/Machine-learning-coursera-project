@@ -1,0 +1,64 @@
+---
+title: "Machine learning"
+author: "Saksham"
+date: "23/09/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Executive Summary :-
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, our goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set.
+
+Getting Data & Exploratory analysis :-
+
+```{r, results='hide'}
+library(caret)
+library(randomForest)
+training <- read.csv("pml-training.csv")
+testing <- read.csv("pml-testing.csv")
+summary(training)
+str(training)
+```
+
+We load the required files and see the data through summary and str options. Using this we find that first seven columns are not relevant for prediction purpose as they include name, serial number, etc. Also there are lot of columns with NA values.
+
+Cleaning data :-
+
+```{r, results='hide'}
+nacount <- sapply(training[,1:160], function(x) {sum(is.na(x))})
+nacolumn <- which(nacount >= (0.9*19622))
+training2 <- training[, -nacolumn]
+training2 <- training2[, -(1:7)]
+nzv <- nearZeroVar(training2)
+training2 <- training2[, -nzv]
+training2[,53] <- factor(training2[,53])
+```
+
+So we clean the training dataset to remove features which are not helpful in our prediction of classe variable.
+
+Applying The Model :- 
+
+For modelling, we are using random forest model since it has good accuracy in classification problems and uses cross validation by default.
+
+```{r}
+firstrf <- randomForest(x=training2[,-53], y=training2[,53], importance = T)
+print(firstrf)
+varImpPlot(firstrf, n.var = 20)
+```
+
+In this model 500 trees were used to find the average resultant.
+The Out-Of-Sample error is estimated to be about 0.28 %.
+
+PREDICTION :-
+
+```{r}
+coltotake <- names(training2)
+testing2 <- testing[, names(testing) %in% coltotake]
+predict(firstrf, newdata = testing2)
+```
+
+We take the same variables as before and predict the outcome for 20 entries.
